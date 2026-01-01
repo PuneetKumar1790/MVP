@@ -3,13 +3,13 @@ const { generateTokens, verifyRefreshToken } = require('../services/authService'
 const logger = require('../utils/logger');
 
 /**
- * @desc    Register new user
+ * @desc    Register new user (Admin only)
  * @route   POST /api/auth/register
- * @access  Public
+ * @access  Admin only
  */
 const register = async (req, res, next) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, email, password, role, employeeId, department, designation, dateOfJoining } = req.body;
 
         // Check if user exists
         const existingUser = await User.findOne({ email });
@@ -20,25 +20,36 @@ const register = async (req, res, next) => {
             });
         }
 
+        // Check if employeeId is unique (if provided)
+        if (employeeId) {
+            const existingEmployeeId = await User.findOne({ employeeId });
+            if (existingEmployeeId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Employee ID already exists'
+                });
+            }
+        }
+
         // Create user
-        const user = await User.create({ name, email, password });
+        const user = await User.create({
+            name,
+            email,
+            password,
+            role: role || 'employee',
+            employeeId,
+            department,
+            designation,
+            dateOfJoining: dateOfJoining ? new Date(dateOfJoining) : undefined
+        });
 
-        // Generate tokens
-        const tokens = generateTokens(user._id);
-
-        // Save refresh token to user
-        user.refreshToken = tokens.refreshToken;
-        await user.save();
-
-        logger.info('User registered', { userId: user._id, email: user.email });
+        logger.info('User registered by admin', { userId: user._id, email: user.email, registeredBy: req.user._id });
 
         res.status(201).json({
             success: true,
             message: 'User registered successfully',
             data: {
-                user: user.toSafeObject(),
-                accessToken: tokens.accessToken,
-                refreshToken: tokens.refreshToken
+                user: user.toSafeObject()
             }
         });
     } catch (error) {

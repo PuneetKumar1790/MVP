@@ -1,451 +1,283 @@
-# MVP Backend API Documentation
+# MCD HRMS Backend API Documentation
 
-**Base URL**: `http://localhost:5000`
-
+**Base URL**: `http://localhost:5000`  
 **Authentication**: JWT Bearer Token in `Authorization` header
 
 ---
 
 ## Quick Reference
 
-| Endpoint | Method | Auth | Description |
-|----------|--------|------|-------------|
-| `/health` | GET | ❌ | Health check |
-| `/api/auth/register` | POST | ❌ | Register user |
-| `/api/auth/login` | POST | ❌ | Login user |
-| `/api/auth/refresh` | POST | ❌ | Refresh tokens |
-| `/api/auth/logout` | POST | ✅ | Logout user |
-| `/api/users/me` | GET | ✅ | Get profile |
-| `/api/tasks` | POST | ✅ | Create task |
-| `/api/tasks` | GET | ✅ | Get tasks |
-| `/api/tasks/:id` | GET | ✅ | Get task |
-| `/api/tasks/:id` | PUT | ✅ | Update task |
-| `/api/tasks/:id` | DELETE | ✅ | Delete task |
-
----
-
-## Authentication Flow
-
-```
-1. Register/Login → Get accessToken + refreshToken
-2. Use accessToken in requests: Authorization: Bearer <accessToken>
-3. When accessToken expires (15min), call /refresh with refreshToken
-4. On logout, call /logout to invalidate refreshToken
-```
-
----
-
-## Endpoints Detail
-
-### Health Check
-
-```http
-GET /health
-```
-
-**Response** `200 OK`
-```json
-{
-  "status": "ok",
-  "timestamp": "2026-01-01T16:00:00.000Z"
-}
-```
-
----
-
-### Register
-
-```http
-POST /api/auth/register
-Content-Type: application/json
-
-{
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "password123"
-}
-```
-
-**Validation**:
-- `name`: Required, max 100 chars
-- `email`: Required, valid email format
-- `password`: Required, min 8 chars
-
-**Response** `201 Created`
-```json
-{
-  "success": true,
-  "message": "User registered successfully",
-  "data": {
-    "user": {
-      "id": "6956a1f71079da99f6bbaffa",
-      "name": "John Doe",
-      "email": "john@example.com",
-      "role": "user",
-      "createdAt": "2026-01-01T16:00:00.000Z"
-    },
-    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-    "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
-  }
-}
-```
-
-**Errors**:
-- `400` - Validation error or email already exists
-
----
-
-### Login
-
-```http
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "email": "john@example.com",
-  "password": "password123"
-}
-```
-
-**Response** `200 OK`
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "data": {
-    "user": {
-      "id": "6956a1f71079da99f6bbaffa",
-      "name": "John Doe",
-      "email": "john@example.com",
-      "role": "user",
-      "createdAt": "2026-01-01T16:00:00.000Z"
-    },
-    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-    "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
-  }
-}
-```
-
-**Errors**:
-- `401` - Invalid email or password
-- `429` - Too many login attempts (rate limited: 5 per 15 min)
-
----
-
-### Refresh Token
-
-```http
-POST /api/auth/refresh
-Content-Type: application/json
-
-{
-  "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
-}
-```
-
-**Response** `200 OK`
-```json
-{
-  "success": true,
-  "message": "Token refreshed successfully",
-  "data": {
-    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-    "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
-  }
-}
-```
-
-**Errors**:
-- `401` - Invalid or expired refresh token
-
----
-
-### Logout
-
-```http
-POST /api/auth/logout
-Authorization: Bearer <accessToken>
-```
-
-**Response** `200 OK`
-```json
-{
-  "success": true,
-  "message": "Logged out successfully"
-}
-```
-
----
-
-### Get My Profile
-
-```http
-GET /api/users/me
-Authorization: Bearer <accessToken>
-```
-
-**Response** `200 OK`
-```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "id": "6956a1f71079da99f6bbaffa",
-      "name": "John Doe",
-      "email": "john@example.com",
-      "role": "user",
-      "createdAt": "2026-01-01T16:00:00.000Z"
-    }
-  }
-}
-```
-
----
-
-### Create Task
-
-```http
-POST /api/tasks
-Authorization: Bearer <accessToken>
-Content-Type: application/json
-
-{
-  "title": "My Task",
-  "description": "Task description (optional)"
-}
-```
-
-**Validation**:
-- `title`: Required, max 200 chars
-- `description`: Optional, max 2000 chars
-
-**Response** `201 Created`
-```json
-{
-  "success": true,
-  "message": "Task created successfully",
-  "data": {
-    "task": {
-      "_id": "6956b2f81079da99f6bbb000",
-      "title": "My Task",
-      "description": "Task description",
-      "owner": "6956a1f71079da99f6bbaffa",
-      "createdAt": "2026-01-01T16:30:00.000Z",
-      "updatedAt": "2026-01-01T16:30:00.000Z"
-    }
-  }
-}
-```
-
----
-
-### Get Tasks
-
-```http
-GET /api/tasks
-Authorization: Bearer <accessToken>
-```
-
-**Note**: Regular users see only their tasks. Admin users see all tasks.
-
-**Response** `200 OK`
-```json
-{
-  "success": true,
-  "count": 2,
-  "data": {
-    "tasks": [
-      {
-        "_id": "6956b2f81079da99f6bbb000",
-        "title": "My Task",
-        "description": "Task description",
-        "owner": {
-          "_id": "6956a1f71079da99f6bbaffa",
-          "name": "John Doe",
-          "email": "john@example.com"
-        },
-        "createdAt": "2026-01-01T16:30:00.000Z"
-      }
-    ]
-  }
-}
-```
-
----
-
-### Get Single Task
-
-```http
-GET /api/tasks/:id
-Authorization: Bearer <accessToken>
-```
-
-**Response** `200 OK`
-```json
-{
-  "success": true,
-  "data": {
-    "task": {
-      "_id": "6956b2f81079da99f6bbb000",
-      "title": "My Task",
-      "description": "Task description",
-      "owner": {
-        "_id": "6956a1f71079da99f6bbaffa",
-        "name": "John Doe",
-        "email": "john@example.com"
-      },
-      "createdAt": "2026-01-01T16:30:00.000Z"
-    }
-  }
-}
-```
-
-**Errors**:
-- `403` - Not authorized (not owner, not admin)
-- `404` - Task not found
-
----
-
-### Update Task
-
-```http
-PUT /api/tasks/:id
-Authorization: Bearer <accessToken>
-Content-Type: application/json
-
-{
-  "title": "Updated Title",
-  "description": "Updated description"
-}
-```
-
-**Note**: Only the task owner can update (even admins cannot update others' tasks)
-
-**Response** `200 OK`
-```json
-{
-  "success": true,
-  "message": "Task updated successfully",
-  "data": {
-    "task": {
-      "_id": "6956b2f81079da99f6bbb000",
-      "title": "Updated Title",
-      "description": "Updated description",
-      "owner": "6956a1f71079da99f6bbaffa",
-      "createdAt": "2026-01-01T16:30:00.000Z",
-      "updatedAt": "2026-01-01T16:35:00.000Z"
-    }
-  }
-}
-```
-
-**Errors**:
-- `403` - Not authorized (not owner)
-- `404` - Task not found
-
----
-
-### Delete Task
-
-```http
-DELETE /api/tasks/:id
-Authorization: Bearer <accessToken>
-```
-
-**Note**: Owner can delete their own tasks. Admin can delete any task.
-
-**Response** `200 OK`
-```json
-{
-  "success": true,
-  "message": "Task deleted successfully"
-}
-```
-
-**Errors**:
-- `403` - Not authorized (not owner, not admin)
-- `404` - Task not found
-
----
-
-## Error Response Format
-
-All errors follow this format:
-
-```json
-{
-  "success": false,
-  "message": "Error description",
-  "errors": ["Field-specific errors (if validation)"]
-}
-```
-
-### Common Status Codes
-
-| Code | Meaning |
-|------|---------|
-| `200` | Success |
-| `201` | Created |
-| `400` | Validation error / Bad request |
-| `401` | Unauthorized (missing/invalid token) |
-| `403` | Forbidden (insufficient permissions) |
-| `404` | Not found |
-| `429` | Too many requests (rate limited) |
-| `500` | Server error |
-
----
-
-## Frontend Integration Tips
-
-### 1. Store Tokens Securely
-```javascript
-// After login/register
-localStorage.setItem('accessToken', data.accessToken);
-localStorage.setItem('refreshToken', data.refreshToken);
-```
-
-### 2. Add Auth Header to Requests
-```javascript
-const response = await fetch('/api/users/me', {
-  headers: {
-    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    'Content-Type': 'application/json'
-  }
-});
-```
-
-### 3. Handle Token Refresh
-```javascript
-// When you get 401, try refreshing
-if (response.status === 401) {
-  const refreshRes = await fetch('/api/auth/refresh', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken: localStorage.getItem('refreshToken') })
-  });
-  
-  if (refreshRes.ok) {
-    const { data } = await refreshRes.json();
-    localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
-    // Retry original request
-  } else {
-    // Redirect to login
-  }
-}
-```
-
-### 4. Clear Tokens on Logout
-```javascript
-localStorage.removeItem('accessToken');
-localStorage.removeItem('refreshToken');
-```
+### Authentication
+| Method | Endpoint | Auth | Roles | Description |
+|--------|----------|------|-------|-------------|
+| POST | `/api/auth/register` | ✅ | admin | Register employee |
+| POST | `/api/auth/login` | ❌ | - | Login |
+| POST | `/api/auth/refresh` | ❌ | - | Refresh token |
+| POST | `/api/auth/logout` | ✅ | all | Logout |
+| GET | `/api/users/me` | ✅ | all | Get profile |
+
+### Attendance
+| Method | Endpoint | Auth | Roles | Description |
+|--------|----------|------|-------|-------------|
+| POST | `/api/attendance/mark` | ✅ | all | Mark attendance |
+| GET | `/api/attendance/my` | ✅ | all | My attendance |
+| GET | `/api/attendance` | ✅ | hr, admin | All attendance |
+
+### Leave
+| Method | Endpoint | Auth | Roles | Description |
+|--------|----------|------|-------|-------------|
+| POST | `/api/leave/apply` | ✅ | all | Apply for leave |
+| GET | `/api/leave/my` | ✅ | all | My leaves |
+| GET | `/api/leave` | ✅ | hr, dept_head, admin | All leaves |
+| PATCH | `/api/leave/:id/status` | ✅ | hr, dept_head | Approve/Reject |
+
+### Transfers
+| Method | Endpoint | Auth | Roles | Description |
+|--------|----------|------|-------|-------------|
+| POST | `/api/transfers/request` | ✅ | all | Request transfer |
+| GET | `/api/transfers/my` | ✅ | all | My transfers |
+| GET | `/api/transfers` | ✅ | hr, admin | All transfers |
+| PATCH | `/api/transfers/:id/approve` | ✅ | hr, admin | Approve/Reject |
+
+### Grievances
+| Method | Endpoint | Auth | Roles | Description |
+|--------|----------|------|-------|-------------|
+| POST | `/api/grievances` | ✅ | all | File grievance (+ file) |
+| GET | `/api/grievances/my` | ✅ | all | My grievances |
+| GET | `/api/grievances` | ✅ | hr, admin | All grievances |
+| PATCH | `/api/grievances/:id/respond` | ✅ | hr, admin | Respond |
+
+### Files
+| Method | Endpoint | Auth | Roles | Description |
+|--------|----------|------|-------|-------------|
+| GET | `/api/files/my` | ✅ | all | My uploaded files |
+| GET | `/api/files/:blobName` | ✅ | owner, hr, admin | Get SAS URL |
 
 ---
 
 ## Roles
 
-| Role | Permissions |
+| Role | Description |
 |------|-------------|
-| `user` | CRUD own tasks, view own profile |
-| `admin` | View all tasks, delete any task |
+| `employee` | Regular employee - can manage own data |
+| `hr` | HR staff - can manage all employee data |
+| `department_head` | Department head - can approve department leaves |
+| `admin` | System admin - full access |
+
+---
+
+## Postman-Ready Requests
+
+### 1. Login
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@mcd.gov.in",
+  "password": "password123"
+}
+```
+
+### 2. Register Employee (Admin Only)
+```http
+POST /api/auth/register
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "name": "Rajesh Kumar",
+  "email": "rajesh.kumar@mcd.gov.in",
+  "password": "password123",
+  "role": "employee",
+  "employeeId": "MCD-2024-001",
+  "department": "Sanitation",
+  "designation": "Junior Engineer",
+  "dateOfJoining": "2024-01-15"
+}
+```
+
+### 3. Mark Attendance
+```http
+POST /api/attendance/mark
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "status": "Present",
+  "remarks": "On time"
+}
+```
+**Status options**: `Present`, `Absent`, `Late`, `WFH`
+
+### 4. Apply Leave
+```http
+POST /api/leave/apply
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "leaveType": "casual",
+  "fromDate": "2024-02-01",
+  "toDate": "2024-02-03",
+  "reason": "Family function in hometown"
+}
+```
+**Leave types**: `sick`, `casual`, `earned`, `maternity`, `paternity`, `unpaid`
+
+### 5. Approve/Reject Leave (HR/Dept Head)
+```http
+PATCH /api/leave/:id/status
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "status": "approved",
+  "approverRemarks": "Approved for 3 days"
+}
+```
+
+### 6. Request Transfer
+```http
+POST /api/transfers/request
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "requestedDepartment": "Engineering",
+  "reason": "I have relevant experience in civil engineering and would like to contribute to infrastructure projects."
+}
+```
+
+### 7. Approve Transfer (HR/Admin)
+```http
+PATCH /api/transfers/:id/approve
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "status": "approved",
+  "approverRemarks": "Transfer approved based on department needs",
+  "effectiveDate": "2024-03-01"
+}
+```
+
+### 8. File Grievance (with file upload)
+```http
+POST /api/grievances
+Authorization: Bearer <accessToken>
+Content-Type: multipart/form-data
+
+category: harassment
+description: I am facing continuous harassment from my supervisor regarding work deadlines.
+priority: high
+file: <PDF/JPEG/PNG file, max 10MB>
+```
+**Categories**: `harassment`, `discrimination`, `workplace_safety`, `salary`, `benefits`, `management`, `other`
+
+### 9. Respond to Grievance (HR/Admin)
+```http
+PATCH /api/grievances/:id/respond
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "status": "in_progress",
+  "response": "We have initiated an inquiry into this matter. You will be contacted within 3 working days."
+}
+```
+
+### 10. Get File Access (SAS URL)
+```http
+GET /api/files/:blobName
+Authorization: Bearer <accessToken>
+```
+**Response**: Returns a 10-minute valid SAS URL to access the file.
+
+---
+
+## File Upload Rules
+
+| Rule | Value |
+|------|-------|
+| Max size | 10 MB |
+| Allowed types | PDF, JPEG, PNG |
+| Storage | Azure Blob Storage (private) |
+| Access | SAS URL (10 min expiry) |
+
+---
+
+## Standard Response Format
+
+**Success**:
+```json
+{
+  "success": true,
+  "message": "Operation successful",
+  "data": { ... }
+}
+```
+
+**Error**:
+```json
+{
+  "success": false,
+  "message": "Error description",
+  "errors": ["Field-specific errors"]
+}
+```
+
+---
+
+## Getting Started
+
+### 1. Install Dependencies
+```bash
+npm install
+```
+
+### 2. Configure Environment
+```bash
+cp .env.example .env
+# Edit .env with your values
+```
+
+### 3. Create Admin User
+Since registration is admin-only, create the first admin directly in MongoDB:
+```javascript
+db.users.insertOne({
+  name: "System Admin",
+  email: "admin@mcd.gov.in",
+  password: "$2b$10$...", // bcrypt hash of your password
+  role: "admin",
+  employeeId: "MCD-ADMIN-001",
+  department: "IT",
+  createdAt: new Date()
+})
+```
+
+Or use this Node.js script:
+```javascript
+const bcrypt = require('bcrypt');
+const password = await bcrypt.hash('your-password', 10);
+// Use this hash in MongoDB insert
+```
+
+### 4. Start Server
+```bash
+npm run dev
+```
+
+---
+
+## Azure Blob Storage Setup
+
+1. Create Azure Storage Account
+2. Create a container (set to **Private**)
+3. Get Account Name and Account Key
+4. Add to `.env`:
+```env
+AZURE_STORAGE_ACCOUNT_NAME=youraccount
+AZURE_STORAGE_ACCOUNT_KEY=yourkey
+AZURE_STORAGE_CONTAINER_NAME=hrms-files
+```

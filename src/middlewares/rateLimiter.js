@@ -2,11 +2,11 @@ const rateLimit = require('express-rate-limit');
 
 // Rate limiter for login route (prevent brute force)
 const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
+    windowMs: 1 * 60 * 1000, // 1 minute
     max: 5, // 5 attempts per window
     message: {
         success: false,
-        message: 'Too many login attempts. Please try again after 15 minutes.'
+        message: 'Too many login attempts. Please try again after 1 minute.'
     },
     standardHeaders: true,
     legacyHeaders: false
@@ -14,7 +14,7 @@ const loginLimiter = rateLimit({
 
 // General API rate limiter
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
+    windowMs: 1 * 60 * 1000, // 1 minute
     max: 100, // 100 requests per window
     message: {
         success: false,

@@ -1,16 +1,24 @@
 {
-  "name": "mvp-backend-api",
+  "name": "mcd-hrms-backend",
   "version": "1.0.0",
-  "description": "Secure MVP Backend API with JWT Authentication",
+  "description": "HRMS Backend API for Municipal Corporation of Delhi",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
-  "keywords": ["nodejs", "express", "mongodb", "jwt", "api"],
+  "keywords": [
+    "nodejs",
+    "express",
+    "mongodb",
+    "jwt",
+    "hrms",
+    "azure"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@azure/storage-blob": "^12.17.0",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "express": "^4.18.2",
@@ -20,6 +28,8 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.3",
     "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "uuid": "^9.0.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {

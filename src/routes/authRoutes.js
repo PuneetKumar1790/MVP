@@ -4,11 +4,14 @@ const { register, login, refresh, logout } = require('../controllers/authControl
 const { registerSchema, loginSchema, refreshTokenSchema } = require('../utils/validators');
 const validateRequest = require('../middlewares/validateRequest');
 const authMiddleware = require('../middlewares/authMiddleware');
+const roleMiddleware = require('../middlewares/roleMiddleware');
 const { loginLimiter } = require('../middlewares/rateLimiter');
 
-// POST /api/auth/register
+// POST /api/auth/register (Admin only)
 router.post(
     '/register',
+    authMiddleware,
+    roleMiddleware('admin'),
     validateRequest(registerSchema),
     register
 );
